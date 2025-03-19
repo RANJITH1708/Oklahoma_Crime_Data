@@ -360,26 +360,20 @@ connection.close()
 
 ### Data Analysis
 Correlation Analysis
-Using the crimedata_imputed table, correlations between population and crime variables were calculated:
+Correlation Analysis
+Using crimedata_imputed joined with labor_statistics, correlations with total_offenses were:
+•	Strong Correlation: population (0.963651).
+•	Weak/Negligible Correlations: unemployment_rate (0.001092), unemployment (0.000746), labor_force (-0.002429), year (-0.002539), employment (-0.003691).
 
-Strong Correlations:
-crimes_against_property: 0.966
-larceny_theft_offenses: 0.961
-fraud_offenses: 0.950
-Weak Correlations:
-purchasing_prostitution: 0.040
-involuntary_servitude: -0.019
-betting_wagering: -0.018
-NaN Values: sports_tampering resulted in NaN due to zero variance (all values likely 0), triggering a NumPy warning (RuntimeWarning: invalid value encountered in divide).
 
 ### Predictive Modeling
-Predictive models were trained to forecast population using crime variety variables, excluding total_offenses, crime_rate, year, latitude, and longitude.
-
-Python Script for Correlation and Predictive Modeling
+Models were trained to predict total_offenses using features: population, year, labor_force, employment, unemployment, and unemployment_rate.
 
 
-!pip install pymysql pandas scikit-learn matplotlib seaborn
-!pip install sqlalchemy
+#Python Script for Correlation and Predictive Modeling
+# Install required packages (uncomment if running in a new environment)
+# !pip install pymysql pandas scikit-learn matplotlib seaborn
+# !pip install sqlalchemy
 
 from sqlalchemy import create_engine
 import pandas as pd
@@ -394,51 +388,53 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.metrics import r2_score, mean_squared_error
 import numpy as np
 
+# Create database engine
 engine = create_engine(
     f"mysql+pymysql://proot:Ilovesql%402025@4.tcp.ngrok.io:16944/oklahoma_crime_data?connect_timeout=60&read_timeout=60"
 )
 
-crime_df = pd.read_sql("SELECT * FROM crimedata_imputed", engine)
-crime_df = crime_df.drop(columns=['crime_id'])
+# Load data with a join between crimedata_imputed and labor_statistics
+query = """
+SELECT c.city_id, c.year, c.population, c.total_offenses, 
+       l.labor_force, l.employment, l.unemployment, l.unemployment_rate
+FROM crimedata_imputed c
+JOIN labor_statistics l ON c.year = l.year
+"""
+crime_df = pd.read_sql(query, engine)
+
+# Drop unnecessary columns (e.g., crime_id if it exists)
+if 'crime_id' in crime_df.columns:
+    crime_df = crime_df.drop(columns=['crime_id'])
+
+# Check for missing values and fill with mean
 print("Missing values:\n", crime_df.isnull().sum())
-crime_df = crime_df.fillna(0)
+crime_df = crime_df.fillna(crime_df.mean(numeric_only=True))
 
-crime_columns = [
-    'crimes_against_persons', 'crimes_against_property', 'crimes_against_society',
-    'assault_offenses', 'aggravated_assault', 'simple_assault', 'intimidation', 'homicide_offenses',
-    'murder_and_nonnegligent_manslaughter', 'negligent_manslaughter', 'justifiable_homicide',
-    'human_trafficking_offenses', 'commercial_sex_acts', 'involuntary_servitude', 'kidnapping_abduction',
-    'sex_offenses', 'rape', 'sodomy', 'sexual_assault_with_an_object', 'fondling', 'sex_offenses_non_forcible',
-    'incest', 'statutory_rape', 'arson', 'bribery', 'burglary_breaking_entering', 'counterfeiting_forgery',
-    'destruction_damage_vandalism_of_property', 'embezzlement', 'extortion_blackmail', 'fraud_offenses',
-    'false_pretenses_swindle_confidence_game', 'credit_card_automated_teller_machine_fraud', 'impersonation',
-    'welfare_fraud', 'wire_fraud', 'identity_theft', 'hacking_computer_invasion', 'larceny_theft_offenses',
-    'pocket_picking', 'purse_snatching', 'shop_lifting', 'theft_from_building',
-    'theft_from_coin_operated_machine_or_device', 'theft_from_motor_vehicle',
-    'theft_of_motor_vehicle_parts_or_accessories', 'all_other_larceny', 'motor_vehicle_theft', 'robbery',
-    'stolen_property_offenses', 'animal_cruelty', 'drug_narcotic_offenses', 'drug_narcotic_violations',
-    'drug_equipment_violations', 'gambling_offenses', 'betting_wagering', 'operating_promoting_assisting_gambling',
-    'gambling_equipment_violations', 'sports_tampering', 'pornography_obscene_material', 'prostitution_offenses',
-    'prostitution', 'assisting_or_promoting_prostitution', 'purchasing_prostitution', 'weapon_law_violations'
-]
+# Define features and target
+X = crime_df[['population', 'year', 'labor_force', 'employment', 'unemployment', 'unemployment_rate']]
+y = crime_df['total_offenses']
 
-corr_columns = [col for col in crime_columns if col in crime_df.columns]
-correlation_matrix = crime_df[corr_columns].corrwith(crime_df['population'])
-print("Correlations with population (crime variety variables only):")
-print(correlation_matrix.sort_values(ascending=False))
+# **Correlation Analysis**
+# Select columns for correlation (predictors + target)
+corr_columns = ['population', 'year', 'labor_force', 'employment', 'unemployment', 'unemployment_rate', 'total_offenses']
 
-plt.figure(figsize=(12, 10))
-sns.heatmap(crime_df[corr_columns].corr(), cmap='coolwarm', vmin=-1, vmax=1, center=0)
-plt.title("Correlation Matrix of Crime Variety Variables")
+# Compute correlation matrix
+correlation_matrix = crime_df[corr_columns].corr()
+
+# Print correlations with total_offenses
+print("Correlations with total_offenses:")
+print(correlation_matrix['total_offenses'].sort_values(ascending=False))
+
+# Visualize correlation matrix with a heatmap
+plt.figure(figsize=(10, 8))
+sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', vmin=-1, vmax=1, center=0)
+plt.title("Correlation Matrix of Predictors and Total Offenses")
 plt.show()
 
-columns_to_drop = ['population', 'total_offenses', 'city_id', 'year', 'latitude', 'longitude']
-existing_columns_to_drop = [col for col in columns_to_drop if col in crime_df.columns]
-X = crime_df.drop(columns=existing_columns_to_drop)
-y = crime_df['population']
-
+# Split data into training and test sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
+# Define models to evaluate
 models = {
     'Linear Regression': LinearRegression(),
     'Decision Tree': DecisionTreeRegressor(random_state=42),
@@ -448,6 +444,7 @@ models = {
     'Neural Network': MLPRegressor(random_state=42, max_iter=1000)
 }
 
+# Function to evaluate models
 def evaluate_model(model, X_train, X_test, y_train, y_test):
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
@@ -456,6 +453,7 @@ def evaluate_model(model, X_train, X_test, y_train, y_test):
     cv_scores = cross_val_score(model, X, y, cv=5, scoring='r2')
     return r2, mse, np.mean(cv_scores), np.std(cv_scores)
 
+# Evaluate all models and store results
 results = {}
 for name, model in models.items():
     r2, mse, cv_r2_mean, cv_r2_std = evaluate_model(model, X_train, X_test, y_train, y_test)
@@ -465,6 +463,7 @@ for name, model in models.items():
         'Cross-validated R-squared': f"{cv_r2_mean:.2f} (± {cv_r2_std:.2f})"
     }
 
+# Print model performance
 print("Model Performance on Test Set:")
 for name, metrics in results.items():
     print(f"{name}:")
@@ -472,23 +471,37 @@ for name, metrics in results.items():
     print(f"  MSE: {metrics['MSE']:.2f}")
     print(f"  Cross-validated R-squared: {metrics['Cross-validated R-squared']}\n")
 
+# Identify the champion model based on cross-validated R-squared
 champion = max(results, key=lambda k: float(results[k]['Cross-validated R-squared'].split()[0]))
 print(f"Champion Model: {champion}")
 print(f"  R-squared: {results[champion]['R-squared']:.4f}")
 print(f"  MSE: {results[champion]['MSE']:.2f}")
 print(f"  Cross-validated R-squared: {results[champion]['Cross-validated R-squared']}")
 
+# Visualize actual vs predicted for the champion model
+champion_model = models[champion]
+champion_model.fit(X_train, y_train)
+y_pred = champion_model.predict(X_test)
+plt.figure(figsize=(10, 6))
+sns.scatterplot(x=y_test, y=y_pred)
+plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--')
+plt.xlabel('Actual Total Offenses')
+plt.ylabel('Predicted Total Offenses')
+plt.title(f'Actual vs Predicted Total Offenses ({champion})')
+plt.show()
 
 
-##### Results
+
+Results
 Model Performance:
+•	Random Forest: R-squared: 0.9597, MSE: 23,722.89, Cross-validated R-squared: 0.94 ± 0.01
+•	Gradient Boosting: R-squared: 0.9584, MSE: 24,512.66, Cross-validated R-squared: 0.94 ± 0.01
+•	Linear Regression: R-squared: 0.9444, MSE: 32,773.24, Cross-validated R-squared: 0.92 ± 0.01
+•	Decision Tree: R-squared: 0.9374, MSE: 36,868.31, Cross-validated R-squared: 0.91 ± 0.01
+•	Neural Network: R-squared: 0.9385, MSE: 36,225.13, Cross-validated R-squared: -0.42 ± 2.66
+•	SVR: R-squared: -0.0598, MSE: 624,604.65, Cross-validated R-squared: -0.07 ± 0.01
+Champion Model: Random Forest, selected for its high R-squared and stable cross-validated performance.
+ 
 
-Neural Network (Champion): R-squared: 0.9772, Cross-validated R-squared: 0.90 ± 0.06, MSE: 2,933,080.30
-Random Forest: R-squared: 0.9817, Cross-validated R-squared: 0.86 ± 0.07, MSE: 2,348,983.96
-Gradient Boosting: R-squared: 0.9848, Cross-validated R-squared: 0.73 ± 0.24, MSE: 1,953,164.13
-Linear Regression: R-squared: 0.9692, Cross-validated R-squared: 0.46 ± 0.83, MSE: 3,958,126.42
-Decision Tree: R-squared: 0.8234, Cross-validated R-squared: 0.69 ± 0.19, MSE: 22,700,393.33
-SVR: R-squared: -0.0341, Cross-validated R-squared: -0.08 ± 0.06, MSE: 132,886,335.17
-The Neural Network was selected as the champion model due to its high and stable cross-validated R-squared.
 
 
