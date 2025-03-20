@@ -285,6 +285,7 @@ LINES TERMINATED BY '\n'
 IGNORE 1 LINES
 (city_name, latitude, longitude);
 
+![image](https://github.com/user-attachments/assets/844d457f-ad67-4c5d-987a-26bf40ff05ec)
 
 
 # Remote Access
@@ -364,6 +365,7 @@ Correlation Analysis
 Using crimedata_imputed joined with labor_statistics, correlations with total_offenses were:
 •	Strong Correlation: population (0.963651).
 •	Weak/Negligible Correlations: unemployment_rate (0.001092), unemployment (0.000746), labor_force (-0.002429), year (-0.002539), employment (-0.003691).
+![image](https://github.com/user-attachments/assets/81835b54-bbfc-48a0-8a9d-5420f77f414c)
 
 
 # Predictive Modeling
@@ -501,7 +503,8 @@ Model Performance:
 •	Neural Network: R-squared: 0.9385, MSE: 36,225.13, Cross-validated R-squared: -0.42 ± 2.66
 •	SVR: R-squared: -0.0598, MSE: 624,604.65, Cross-validated R-squared: -0.07 ± 0.01
 Champion Model: Random Forest, selected for its high R-squared and stable cross-validated performance.
- 
+ ![image](https://github.com/user-attachments/assets/c97a7433-080c-42ab-af2d-5057f5929d44)
+
 
 
 
