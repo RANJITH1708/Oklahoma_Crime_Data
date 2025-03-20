@@ -152,8 +152,9 @@ with open(output_file, "w", newline="") as file:
 
 files.download(output_file)
 
-#### Database Design and Setup
-A MySQL database named oklahoma_crime_data was created to efficiently store the standardized data.
+# Database Design and Setup
+
+##A MySQL database named oklahoma_crime_data was created to efficiently store the standardized data.
 
 USE oklahoma_crime_data;
 
@@ -273,7 +274,7 @@ GRANT ALL PRIVILEGES ON oklahoma_crime_data.* TO 'proot'@'%';
 FLUSH PRIVILEGES;
 
 
-##### Data Loading
+# Data Loading
 Data was imported into the database using LOAD DATA INFILE commands, ensuring proper formatting:
 
 LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/oklahoma_cities.csv'
@@ -286,7 +287,7 @@ IGNORE 1 LINES
 
 
 
-#### Remote Access
+# Remote Access
 The database was connected to Google Colab using ngrok for remote access and analysis:
 
 import pymysql
@@ -302,10 +303,10 @@ print("Connection successful!")
 
 
 
-###### Data Imputation
-To address missing data, a new table, crimedata_imputed, was created by imputing values for cities with at least seven years of data.
+# Data Imputation
+## To address missing data, a new table, crimedata_imputed, was created by imputing values for cities with at least seven years of data.
 
-Methodology
+### Methodology
 Filtering: Identified cities with seven or more years of data.
 Imputation Process:
 Replaced zeros with NaN in crime-related columns (excluding population).
@@ -357,7 +358,7 @@ connection.commit()
 connection.close()
 
 
-### Data Analysis
+# Data Analysis
 Correlation Analysis
 Correlation Analysis
 Using crimedata_imputed joined with labor_statistics, correlations with total_offenses were:
@@ -365,7 +366,7 @@ Using crimedata_imputed joined with labor_statistics, correlations with total_of
 •	Weak/Negligible Correlations: unemployment_rate (0.001092), unemployment (0.000746), labor_force (-0.002429), year (-0.002539), employment (-0.003691).
 
 
-### Predictive Modeling
+# Predictive Modeling
 Models were trained to predict total_offenses using features: population, year, labor_force, employment, unemployment, and unemployment_rate.
 
 
