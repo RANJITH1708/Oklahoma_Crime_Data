@@ -16,7 +16,6 @@ The crime data was sourced from the FBI Crime Data Explorer, specifically the Na
 Upon conversion to Excel, the dataset exhibited several issues:
 
 - **Merged Columns**: The Excel sheet contained merged columns, which were manually corrected to ensure proper data structure.
-- **Missing Data for Universities**: Data for universities (Carl Albert State College, Oklahoma State University, University of Oklahoma, and Sallisaw) was missing. These rows were removed from the dataset, as they lacked sufficient information for analysis.
 
 ### Challenges
 
