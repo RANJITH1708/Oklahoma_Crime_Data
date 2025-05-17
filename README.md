@@ -1,4 +1,3 @@
-# Just-Do-It
 # Oklahoma Crime Data Analysis Project Report
 
 ## Introduction
